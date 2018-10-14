@@ -1,7 +1,12 @@
-console.log('hello world!');
-
 require('./index.html');
+const queryString = require('query-string');
 const { Elm } = require('./Main.elm');
-console.log(Elm);
 
-Elm.Main.init(document.getElementById('app-root'));
+const urlParams = queryString.parse(location.search);
+
+Elm.Main.init({
+  node: document.getElementById('app-root'),
+  flags: {
+    debug: urlParams.debug === "true"
+  }
+});

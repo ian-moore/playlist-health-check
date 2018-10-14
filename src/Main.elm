@@ -2,27 +2,42 @@ module Main exposing (main)
 
 
 import Browser
-import Html
+import Json.Decode as D
+import Message exposing (AppMsg(..))
+import Model exposing (AppFlags, AppModel, flagsDecoder, initialModel)
 import Platform exposing (Program)
+import View exposing (render)
 
 
-type AppMsg
-  = DumbMessage
-  | NoOp
+getTitle : AppModel -> String
+getTitle model =
+    "Playlist Health Check"
 
 
-type alias AppModel =
-  { data : String
-  }
+getView : AppModel -> Browser.Document msg
+getView model =
+    { title = getTitle model
+    , body = [ render model ]
+    }
 
 
-initialModel = { data = "foo" }
+appInit : D.Value -> (AppModel, Cmd AppMsg)
+appInit json =
+    case D.decodeValue flagsDecoder (Debug.log "json" json) of
+        Ok flags ->
+            ({initialModel | flags = (Debug.log "flags" flags) }, Cmd.none)
+        Err err ->
+            let
+                -- TODO: app error state / messages
+                x = Debug.log "error" err
+            in
+                (initialModel, Cmd.none)
 
 
-main : Program () AppModel AppMsg
+main : Program D.Value AppModel AppMsg
 main = Browser.document
-  { init = \_ -> (initialModel, Cmd.none)
-  , subscriptions = \_ -> Sub.none
-  , update = \_ _ -> (initialModel, Cmd.none)
-  , view = \_ -> { title = "elm title", body = [ Html.div [] [ Html.text "Hello from Elm!" ] ]}
-  }
+    { init = appInit
+    , subscriptions = \_ -> Sub.none
+    , update = \_ _ -> (initialModel, Cmd.none)
+    , view = getView
+    }
