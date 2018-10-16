@@ -2,10 +2,12 @@ module Main exposing (main)
 
 
 import Browser
+import Browser.Navigation as Nav
 import Json.Decode as D
 import Message exposing (AppMsg(..))
 import Model exposing (AppFlags, AppModel, flagsDecoder, initialModel)
 import Platform exposing (Program)
+import Url exposing (Url)
 import View exposing (render)
 
 
@@ -21,23 +23,24 @@ getView model =
     }
 
 
-appInit : D.Value -> (AppModel, Cmd AppMsg)
-appInit json =
-    case D.decodeValue flagsDecoder (Debug.log "json" json) of
-        Ok flags ->
-            ({initialModel | flags = (Debug.log "flags" flags) }, Cmd.none)
-        Err err ->
-            let
-                -- TODO: app error state / messages
-                x = Debug.log "error" err
-            in
-                (initialModel, Cmd.none)
+appInit : D.Value -> Url -> Nav.Key -> (AppModel, Cmd AppMsg)
+appInit json url key =
+    let
+        model = initialModel key
+    in
+        case D.decodeValue flagsDecoder json of
+            Ok flags ->
+                ({ model | flags = flags }, Cmd.none)
+            Err err ->
+                (Model.setAppError (D.errorToString err) model, Cmd.none)
 
 
 main : Program D.Value AppModel AppMsg
-main = Browser.document
+main = Browser.application
     { init = appInit
+    , onUrlChange = \url -> NoOp
+    , onUrlRequest = \urlRequest -> NoOp
     , subscriptions = \_ -> Sub.none
-    , update = \_ _ -> (initialModel, Cmd.none)
+    , update = \msg model -> (model, Cmd.none)
     , view = getView
     }
